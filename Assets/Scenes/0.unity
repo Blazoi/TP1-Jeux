@@ -553,8 +553,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 475, y: -200}
-  m_SizeDelta: {x: 300, y: 50}
+  m_AnchoredPosition: {x: 475.5, y: -200}
+  m_SizeDelta: {x: 299, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &415481870
 MonoBehaviour:
@@ -704,9 +704,11 @@ MonoBehaviour:
   player: {fileID: 798358019}
   ennemyPrefab: {fileID: 6940887023476703460, guid: 9172ba217f23c2d4aa26e4d9b9b791ec, type: 3}
   baitPrefab: {fileID: 4281964421737311442, guid: b938793aad52e4c4397f9f1248c59cdb, type: 3}
+  canvas: {fileID: 1402962484}
   gameOverText: {fileID: 1749251928}
   timeText: {fileID: 415481870}
   pointsText: {fileID: 136732479}
+  plusPointsAnimatedText: {fileID: 5927760831367901505, guid: 8fa4be38fb1d75a4c8defe6c9cb82950, type: 3}
   comboAnimated: {fileID: 612260150}
 --- !u!114 &610200475
 MonoBehaviour:

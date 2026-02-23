@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -9,9 +10,11 @@ public class GameManager : MonoBehaviour
 	[SerializeField] GameObject ennemyPrefab;
 	[SerializeField] GameObject baitPrefab;
 
+	[SerializeField] Canvas canvas;
 	[SerializeField] TMP_Text gameOverText;
 	[SerializeField] TMP_Text timeText;
 	[SerializeField] TMP_Text pointsText;
+	[SerializeField] TMP_Text plusPointsAnimatedText;
 	[SerializeField] TMP_Text comboAnimated;
 
 	float gameTime = 0;
@@ -26,6 +29,23 @@ public class GameManager : MonoBehaviour
 
 	void Start()
 	{
+		// todo delete those when done testing
+		// todo dont forget to start the game with 3 pairs
+		GameObject ne = Instantiate(ennemyPrefab);
+		ne.transform.position = new Vector3(0, 0, 3);
+		ne.GetComponent<EnnemyScript>().EnnemyDoneDrifting += AfterEnnemyDoneDrifting;
+
+		for (int i = 0; i < 2; i++)
+		{
+			GameObject nb = Instantiate(baitPrefab);
+			nb.transform.position = new Vector3(0, 0, 5 + i*2);
+		}
+
+		// todo add the comboui animations to the cheats
+		CheatCodes cheats = transform.AddComponent<CheatCodes>();
+		cheats.addPoints += AfterEnnemyDoneDrifting;
+		cheats.deleteAllPairs += BaitEnnemyDestruction;
+
 		gameTimeCoroutine = StartCoroutine(GameTimeCounter());
 
 		timeText.rectTransform.localPosition = new Vector3(475, -200, 0);
@@ -96,10 +116,12 @@ public class GameManager : MonoBehaviour
 
 		 Mettre à jour l'UI
 		*/
-		points += Mathf.Pow(baitCollided, 2);
+		float addedPoints = Mathf.Pow(baitCollided, 2);
+		points += addedPoints;
 
-		if (baitCollided > 1) StartCoroutine(ComboUI(baitCollided));
+		if (baitCollided > 1) StartCoroutine(ShakeComboUI());
 		pointsText.text = "Points: " + points;
+		StartCoroutine(PlusPointsAnimation(addedPoints));
 
 	}
 
@@ -174,17 +196,6 @@ public class GameManager : MonoBehaviour
 	}
 
 	// * User Interface
-	IEnumerator ComboUI(int baitCollided)
-	{
-		// Faire défiler de gauche à droite COMBO
-		while (comboAnimated.rectTransform.localPosition.x < 750)
-		{
-			comboAnimated.rectTransform.localPosition += new Vector3(2f, 0, 0);
-			yield return null;
-		}
-		comboAnimated.rectTransform.localPosition = new Vector3(-750, 0, 0);
-	}
-
 	IEnumerator GameTimeCounter()
 	{
 		// Ajouter .01s au temps, l'arrondir et update l'UI
@@ -195,5 +206,32 @@ public class GameManager : MonoBehaviour
 
 		timeText.text = "Temps: " + gameTime;
 		gameTimeCoroutine = StartCoroutine(GameTimeCounter());
+	}
+
+	IEnumerator ShakeComboUI()
+	{
+		// Faire défiler de gauche à droite COMBO
+		while (comboAnimated.rectTransform.localPosition.x < 750)
+		{
+			comboAnimated.rectTransform.localPosition += new Vector3(2f, 0, 0);
+			yield return null;
+		}
+		comboAnimated.rectTransform.localPosition = new Vector3(-750, 0, 0);
+	}
+
+	IEnumerator PlusPointsAnimation(float points)
+	{
+		TMP_Text newText = Instantiate(plusPointsAnimatedText);
+		newText.rectTransform.SetParent(canvas.transform);
+		newText.rectTransform.anchoredPosition = new Vector3(250, -250, 0);
+		newText.text = "+ " + points + " points";
+
+		while (newText.rectTransform.anchoredPosition.y < -90)
+		{
+			newText.rectTransform.anchoredPosition += new Vector2(0, 1);
+			yield return null;
+		}
+
+		Destroy(newText.gameObject);
 	}
 }
