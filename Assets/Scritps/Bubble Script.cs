@@ -15,9 +15,6 @@ public class BubbleScript : MonoBehaviour
 
   void OnTriggerEnter(Collider other)
 	{
-		if (!other.CompareTag("Wall"))
-		{
-			Destroy(transform.parent.gameObject);
-		}
+		Destroy(gameObject);
 	}
 }

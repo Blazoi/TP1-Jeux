@@ -10,8 +10,8 @@ public class PlayerScript : MonoBehaviour
   [SerializeField] GameObject lFin;
   [SerializeField] GameObject rFin;
 
-  float swimSpeed = 30;
-  float rotationSpeed = 45;
+  [SerializeField] float swimSpeed = 30;
+  [SerializeField] float rotationSpeed = 45;
   float tailSpeed;
   float fastTailSpeed;
 
