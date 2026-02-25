@@ -4,69 +4,78 @@ using UnityEngine.InputSystem;
 
 public class PlayerScript : MonoBehaviour
 {
-	[SerializeField] GameObject tailRotationPivot;
-	[SerializeField] float regularTailSpeed = 1;
+  [SerializeField] GameObject tailRotationPivot;
+  [SerializeField] float regularTailSpeed = 1;
 
-	
-	float swimSpeed = 30;
-	float rotationSpeed = 45;
-	float tailSpeed;
-	float fastTailSpeed;
+  [SerializeField] GameObject lFin;
+  [SerializeField] GameObject rFin;
 
-	bool tailDirection = true;
-	
-	InputAction _move;
-	InputAction _space;
-	void Start()
-	{
-		_move = InputSystem.actions.FindAction("Move");
-		_space = InputSystem.actions.FindAction("Jump");
+  float swimSpeed = 30;
+  float rotationSpeed = 45;
+  float tailSpeed;
+  float fastTailSpeed;
 
-		fastTailSpeed = regularTailSpeed * 2.5f;
-	}
+  bool tailDirection = true;
 
-	void Update()
-	{
-		tailSpeed = _space.ReadValue<float>() == 1f ? fastTailSpeed : regularTailSpeed;
-
-		if (tailDirection)
-		{
-			tailRotationPivot.transform.localEulerAngles += new Vector3(0, tailSpeed, 0);
-			if (tailRotationPivot.transform.localEulerAngles.y >= 40)
-			{
-				tailDirection = false;
-			}
-		}
-		else
-		{
-			tailRotationPivot.transform.localEulerAngles -= new Vector3(0, tailSpeed, 0);
-			if (tailRotationPivot.transform.localEulerAngles.y > 50)
-			{
-				tailDirection = true;
-			}
-		}
-	}
-
-	void FixedUpdate()
-	{
-		Vector2 moveInput = _move.ReadValue<Vector2>();
-		float spaceInput = _space.ReadValue<float>();
-
-		Rigidbody selfRigidbody = GetComponent<Rigidbody>();
-
-		// Mouvement
-		selfRigidbody.AddRelativeForce(new Vector3(0, 0, spaceInput * swimSpeed));
-		selfRigidbody.AddRelativeForce(new Vector3(0, moveInput.y * swimSpeed, 0));
-
-		// Rotation
-		selfRigidbody.AddRelativeTorque(new Vector3(0, moveInput.x * rotationSpeed * Time.fixedDeltaTime, 0));
-	}
-
-  void OnCollisionEnter(Collision collision)
+  InputAction _move;
+  InputAction _space;
+  void Start()
   {
-    // if (collision.gameObject.CompareTag("Ennemy"))
-		// {
-		// 	playerTouchedFish(collision.gameObject, GetComponent<Rigidbody>().linearVelocity);
-		// }
+    _move = InputSystem.actions.FindAction("Move");
+    _space = InputSystem.actions.FindAction("Jump");
+
+    fastTailSpeed = regularTailSpeed * 2.5f;
+  }
+
+  void Update()
+  {
+		// Animations
+    // Queue
+    tailSpeed = _space.ReadValue<float>() == 1f ? fastTailSpeed : regularTailSpeed;
+    tailSpeed *= Time.deltaTime;
+
+    if (tailDirection)
+    {
+      tailRotationPivot.transform.localEulerAngles += new Vector3(0, tailSpeed, 0);
+      if (tailRotationPivot.transform.localEulerAngles.y >= 40)
+      {
+        tailDirection = false;
+      }
+    }
+    else
+    {
+      tailRotationPivot.transform.localEulerAngles -= new Vector3(0, tailSpeed, 0);
+      if (tailRotationPivot.transform.localEulerAngles.y > 50)
+      {
+        tailDirection = true;
+      }
+    }
+
+    // Nageoires
+    if (tailDirection)
+    {
+	    lFin.transform.localEulerAngles += new Vector3(0, tailSpeed/4, 0);
+	    rFin.transform.localEulerAngles -= new Vector3(0, tailSpeed/4, 0);
+    }
+    else
+    {
+	    lFin.transform.localEulerAngles -= new Vector3(0, tailSpeed/4, 0);
+	    rFin.transform.localEulerAngles += new Vector3(0, tailSpeed/4, 0);
+    }
+  }
+
+  void FixedUpdate()
+  {
+    Vector2 moveInput = _move.ReadValue<Vector2>();
+    float spaceInput = _space.ReadValue<float>();
+
+    Rigidbody selfRigidbody = GetComponent<Rigidbody>();
+
+    // Mouvement
+    selfRigidbody.AddRelativeForce(new Vector3(0, 0, spaceInput * swimSpeed));
+    selfRigidbody.AddRelativeForce(new Vector3(0, moveInput.y * swimSpeed, 0));
+
+    // Rotation
+    selfRigidbody.AddRelativeTorque(new Vector3(0, moveInput.x * rotationSpeed * Time.fixedDeltaTime, 0));
   }
 }

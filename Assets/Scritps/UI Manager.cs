@@ -17,7 +17,7 @@ public class UIManager : MonoBehaviour
   void Start()
   {
     StartCoroutine(GameTimeCounter());
-    GameManager.PlusPointsAnimation += StartPlusPointsAnimation;
+    GameManager.UpdatePoints += StartPlusPointsAnimation;
     GameManager.ComboUI += StartComboUIAnimation;
 		GameManager.GameOverUI += StartGameOverSequence;
 
@@ -107,11 +107,12 @@ public class UIManager : MonoBehaviour
     Destroy(newText.gameObject);
   }
 
-  void StartGameOverSequence()
+  void StartGameOverSequence(float scoreFinal)
   {
-		StartCoroutine(GameOver());
+		isTimeFlowing = false;
+		StartCoroutine(GameOver(scoreFinal));
   }
-  IEnumerator GameOver()
+  IEnumerator GameOver(float scoreFinal)
   {
     /*
 		 Arrêter le temps
@@ -125,13 +126,16 @@ public class UIManager : MonoBehaviour
     gameOverText.rectTransform.localScale = new Vector3(1, 1, 1);
     timeText.rectTransform.localPosition = Vector3.zero;
     pointsText.rectTransform.localPosition = new Vector3(0, -50, 0);
+		pointsText.text = "Score final: " + scoreFinal;
 
     yield return new WaitForSeconds(5);
 
     gameOverText.rectTransform.localScale = Vector3.zero;
     timeText.rectTransform.localPosition = new Vector3(475, -200, 0);
     pointsText.rectTransform.localPosition = new Vector3(475, -250, 0);
+		pointsText.text = "Points: 0";
 
     gameTime = 0;
+		isTimeFlowing = true;
   }
 }

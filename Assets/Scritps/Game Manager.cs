@@ -11,9 +11,9 @@ public class GameManager : MonoBehaviour
   [SerializeField] GameObject ennemyPrefab;
   [SerializeField] GameObject baitPrefab;
 
-	public static event Action<float, float> PlusPointsAnimation;
-	public static event Action<int> ComboUI;
-  public static event Action GameOverUI;
+  public static event Action<float, float> UpdatePoints;
+  public static event Action<int> ComboUI;
+  public static event Action<float> GameOverUI;
 
   int baitNumber = 0;
   Coroutine gameTimeCoroutine;
@@ -39,9 +39,10 @@ public class GameManager : MonoBehaviour
     }
 
     // todo add the comboui animations to the cheats
-    CheatCodes cheats = transform.AddComponent<CheatCodes>();
-    cheats.addPoints += AfterEnnemyDoneDrifting;
+    CheatCodes cheats = transform.GetComponent<CheatCodes>();
+    cheats.addPoints += AddPoints;
     cheats.deleteAllPairs += DestroyAll;
+    cheats.playComboAnimation += CallComboUI;
   }
 
   void Update()
@@ -75,7 +76,6 @@ public class GameManager : MonoBehaviour
 		 Empêcher l'apparition d'un autre appât jusqu'après la fin du cooldown
 		 */
 
-
     // Position
     float xBaitPosition = UnityEngine.Random.Range(-10f, 10f);
     float yBaitPosition = UnityEngine.Random.Range(-1.5f, 8f);
@@ -95,7 +95,7 @@ public class GameManager : MonoBehaviour
 
     baitNumber++;
 
-    yield return new WaitForSeconds(waitTime);
+    yield return new WaitForSeconds(5f);
     canSpawnNextPair = true;
   }
 
@@ -107,17 +107,21 @@ public class GameManager : MonoBehaviour
 		 Afficher COMBO au hasard (0 ou 1) si baitCollided > 1
 		*/
 
-    float addedPoints = Mathf.Pow(baitCollided, 2);
-    points += addedPoints;
+    AddPoints(baitCollided);
 
     if (baitCollided > 1)
     {
       int comboSelector = UnityEngine.Random.Range(0, 1);
-      if (comboSelector == 0) ComboUI(comboSelector);
-      else ComboUI(comboSelector);
+      if (comboSelector == 0) CallComboUI(comboSelector);
+      else CallComboUI(comboSelector);
     }
+  }
 
-    PlusPointsAnimation(addedPoints, points);
+  void AddPoints(float baitCollided)
+  {
+    float pointsToAdd = Mathf.Pow(baitCollided, 2);
+    points += pointsToAdd;
+    UpdatePoints(pointsToAdd, points);
   }
 
   // * Gameplay
@@ -133,7 +137,7 @@ public class GameManager : MonoBehaviour
 		 Réinitialiser et repartir le jeu normalement
 		 */
 
-    GameOverUI();
+    GameOverUI(points);
     canSpawnNextPair = false;
     player.GetComponent<Rigidbody>().isKinematic = true;
 
@@ -145,6 +149,7 @@ public class GameManager : MonoBehaviour
     player.transform.position = Vector3.zero;
     canSpawnNextPair = true;
     isGameOver = false;
+    points = 0;
     baitNumber = 0;
   }
 
@@ -153,9 +158,6 @@ public class GameManager : MonoBehaviour
     // Trouver tous les ennemis et appâts et les détruire
     GameObject[] ennemies = GameObject.FindGameObjectsWithTag("Ennemy");
     GameObject[] baits = GameObject.FindGameObjectsWithTag("Bait");
-
-    // TODO Make a for loop to start a coroutine for every object to get them to Vector3.zero
-    // TODO Keep this for loop to destroy them afterwards
 
     foreach (GameObject ennemy in ennemies)
     {
@@ -172,8 +174,14 @@ public class GameManager : MonoBehaviour
     while (target.transform.localScale.magnitude > 0)
     {
       target.transform.localScale -= new Vector3(1, 1, 1) * Time.deltaTime;
+      Debug.Log(target.transform.localScale);
       yield return null;
     }
     Destroy(target);
+  }
+
+  void CallComboUI(int comboSelector)
+  {
+    ComboUI(comboSelector);
   }
 }

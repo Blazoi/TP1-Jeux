@@ -4,9 +4,8 @@ using UnityEngine.InputSystem;
 
 public class CheatCodes : MonoBehaviour
 {
-	public event Action<int> addPoints;
-	public event Action playShakeComboAnimation;
-	public event Action playBlinkComboAnimation;
+	public event Action<float> addPoints;
+	public event Action<int> playComboAnimation;
 	public event Action deleteAllPairs;
 
 	void Update()
@@ -19,17 +18,17 @@ public class CheatCodes : MonoBehaviour
 		if (Keyboard.current.iKey.wasPressedThisFrame)
 		{
 			addPoints(2);
-			playShakeComboAnimation();
+			playComboAnimation(0);
 		}
 
 		// Animations Combo
 		if (Keyboard.current.oKey.wasPressedThisFrame)
 		{
-			playBlinkComboAnimation();
+			playComboAnimation(1);
 		}
 		if (Keyboard.current.lKey.wasPressedThisFrame)
 		{
-			playShakeComboAnimation();
+			playComboAnimation(0);
 		}
 
 		// Suppressions touts appâts et poissons
