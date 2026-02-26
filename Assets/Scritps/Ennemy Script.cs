@@ -1,38 +1,35 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class EnnemyScript : MonoBehaviour
 {
   public event Action<int> EnnemyDoneDrifting;
   Vector3 originalPosition;
   int baitCollided = 0;
-  bool canCollide = true;
 
   [SerializeField] GameObject tailRotationPivot;
   [SerializeField] float regularTailSpeed = 45;
   [SerializeField] GameObject lFin;
   [SerializeField] GameObject rFin;
 
-  float force = 2;
   float tailSpeed;
   float fastTailSpeed;
   bool tailDirection = true;
 
   void Start()
   {
-    Debug.Log(transform.localScale.magnitude);
     originalPosition = transform.position;
     transform.localScale = Vector3.zero;
+    // StartCoroutine(YRotation());
 
     fastTailSpeed = regularTailSpeed * 2.5f;
-
-    StartCoroutine(RandomRotation());
   }
 
   void Update()
   {
-    if (transform.localScale.magnitude < 1)
+    if (transform.localScale.magnitude < 2f)
     {
       transform.localScale += new Vector3(2 * Time.deltaTime, 2 * Time.deltaTime, 2 * Time.deltaTime);
     }
@@ -77,12 +74,11 @@ public class EnnemyScript : MonoBehaviour
     if (collision.transform.CompareTag("Wall")) return;
 
     GetComponent<Rigidbody>().isKinematic = false;
-    GetComponent<Rigidbody>().linearVelocity = collision.gameObject.GetComponent<Rigidbody>().linearVelocity * force;
+    Coroutine countdownCoroutine = StartCoroutine(Countdown());
 
     if (collision.gameObject.CompareTag("Player"))
     {
-      canCollide = false;
-      Coroutine countdownCoroutine = StartCoroutine(Countdown());
+      collision.transform.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
     }
   }
 
@@ -90,17 +86,15 @@ public class EnnemyScript : MonoBehaviour
   {
     if (other.CompareTag("Bait"))
     {
-      Debug.Log("Collided with a bait");
       baitCollided++;
       Destroy(other.gameObject);
 
-      if (canCollide) EnnemyDoneDrifting(1);
     }
   }
 
   IEnumerator Countdown()
   {
-    yield return new WaitForSeconds(1.5f);
+    yield return new WaitForSeconds(2.5f);
 
     if (baitCollided > 0)
     {
@@ -114,27 +108,58 @@ public class EnnemyScript : MonoBehaviour
       GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
       GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
     }
-    canCollide = true;
   }
 
-  IEnumerator RandomRotation()
+  // IEnumerator YRotation()
+  // {
+  //   float waitTime = UnityEngine.Random.Range(.5f, 2f);
+  //   float rotationToAdd = UnityEngine.Random.Range(-100, 180);
+  //   yield return new WaitForSeconds(waitTime);
+
+  //   float initialYRotation = transform.eulerAngles.y;
+  //   float goalRotation = (initialYRotation + rotationToAdd);
+  //   float rotationTracker = 0;
+
+  //   while (goalRotation - (initialYRotation + rotationTracker) > 1)
+  //   {
+  //     float rotationIncrement = rotationToAdd * Time.deltaTime;
+  //     transform.Rotate(0, rotationIncrement, 0);
+  //     rotationTracker += rotationIncrement;
+  //     yield return null;
+  //   }
+
+  //   StartCoroutine(YRotation());
+  // }
+  // IEnumerator YRotation()
+  // {
+  //   float newAngle = UnityEngine.Random.Range(-90, 90);
+
+
+
+  //   StartCoroutine(YRotation());
+  // }
+
+  // todo FINISH THE ROTATION
+  IEnumerator YRotation()
   {
+    float rotationIncrement = UnityEngine.Random.Range(-90, 90);
     float waitTime = UnityEngine.Random.Range(.5f, 2f);
-    float rotationToAdd = UnityEngine.Random.Range(15, 180);
+    
+    float initialY = transform.eulerAngles.y;
+    float goal = initialY + rotationIncrement;
+    float rotated =  0;
+
     yield return new WaitForSeconds(waitTime);
 
-    float initialYRotation = transform.eulerAngles.y;
-    float goalRotation = (initialYRotation + rotationToAdd);
-    float rotationTracker = 0;
-
-    while (goalRotation - (initialYRotation + rotationTracker) > 1)
+    while (goal - (transform.eulerAngles.y + rotated) >= 1 )
     {
-      float rotationIncrement = rotationToAdd * Time.deltaTime;
-      transform.Rotate(0, rotationIncrement, 0);
-      rotationTracker += rotationIncrement;
+      float step =  rotationIncrement * Time.deltaTime;
+      rotated += step;
+
+      transform.Rotate(new Vector3(0, step, 0));
+      
       yield return null;
     }
-
-    StartCoroutine(RandomRotation());
+    StartCoroutine(YRotation());
   }
 }

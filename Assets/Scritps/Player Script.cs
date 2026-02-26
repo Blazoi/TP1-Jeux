@@ -1,11 +1,10 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerScript : MonoBehaviour
 {
-  [SerializeField] GameObject tailRotationPivot;
-  [SerializeField] float regularTailSpeed = 1;
+  [SerializeField] GameObject tailPivot;
+  [SerializeField] float regularTailSpeed = 90;
 
   [SerializeField] GameObject lFin;
   [SerializeField] GameObject rFin;
@@ -34,18 +33,20 @@ public class PlayerScript : MonoBehaviour
     tailSpeed = _space.ReadValue<float>() == 1f ? fastTailSpeed : regularTailSpeed;
     tailSpeed *= Time.deltaTime;
 
+    float tailYRotation = tailPivot.transform.localEulerAngles.y;
+
     if (tailDirection)
     {
-      tailRotationPivot.transform.localEulerAngles += new Vector3(0, tailSpeed, 0);
-      if (tailRotationPivot.transform.localEulerAngles.y >= 40)
+      tailPivot.transform.localEulerAngles += new Vector3(0, tailSpeed, 0);
+      if (tailYRotation >= 20 && tailYRotation < 30)
       {
         tailDirection = false;
       }
     }
     else
     {
-      tailRotationPivot.transform.localEulerAngles -= new Vector3(0, tailSpeed, 0);
-      if (tailRotationPivot.transform.localEulerAngles.y > 50)
+      tailPivot.transform.localEulerAngles -= new Vector3(0, tailSpeed, 0);
+      if (tailYRotation <= 340 && tailYRotation > 330)
       {
         tailDirection = true;
       }

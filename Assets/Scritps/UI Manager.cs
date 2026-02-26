@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using Unity.VisualScripting;
 
 public class UIManager : MonoBehaviour
 {
@@ -17,12 +18,12 @@ public class UIManager : MonoBehaviour
   void Start()
   {
     StartCoroutine(GameTimeCounter());
-    GameManager.UpdatePoints += StartPlusPointsAnimation;
-    GameManager.ComboUI += StartComboUIAnimation;
-		GameManager.GameOverUI += StartGameOverSequence;
+    GameManager.UpdatePoints += UpdatePointsHandler;
+    GameManager.ComboUI += ComboUIHandler;
+		GameManager.GameOverUI += GameOverHandler;
 
-    timeText.rectTransform.localPosition = new Vector3(475, -200, 0);
-    pointsText.rectTransform.localPosition = new Vector3(475, -250, 0);
+    timeText.rectTransform.localPosition = new Vector3(-475, -200, 0);
+    pointsText.rectTransform.localPosition = new Vector3(-475, -250, 0);
   }
 
   IEnumerator GameTimeCounter()
@@ -38,7 +39,7 @@ public class UIManager : MonoBehaviour
     }
   }
 
-  void StartComboUIAnimation(int comboSelector)
+  void ComboUIHandler(int comboSelector)
   {
     StartCoroutine(comboSelector == 0 ? ShakeComboUI() : BlinkComboUI());
   }
@@ -47,46 +48,51 @@ public class UIManager : MonoBehaviour
   {
     float timeEllapsed = 0;
     float shakeDelay = .05f;
-    comboText.text = "COMBO";
+
+    TMP_Text newCombo = Instantiate(comboText, canvas.transform);
+    newCombo.rectTransform.anchoredPosition = new Vector2(0, 3);
+    newCombo.text = "COMBO";
 
     while (timeEllapsed < 1)
     {
       float xPosition = Random.Range(-15, 15);
       float yPosition = Random.Range(-15, 15);
 
-      comboText.rectTransform.anchoredPosition = new Vector2(xPosition, yPosition);
+      newCombo.rectTransform.anchoredPosition = new Vector2(xPosition, yPosition);
       yield return new WaitForSeconds(shakeDelay);
       timeEllapsed += shakeDelay;
     }
-    comboText.text = "";
-  }
 
+    Destroy(newCombo.gameObject);
+  }
   IEnumerator BlinkComboUI()
   {
-    comboText.text = "COMBO";
+    TMP_Text newCombo = Instantiate(comboText, canvas.transform);
+    newCombo.rectTransform.anchoredPosition = new Vector2(10, 0);
+
     float timeEllapsed = 0;
-    float blinkDelay = .05f; ;
-    bool isVisible = false;
+    float blinkDelay = .05f;
+    bool isVisible = true;
 
     while (timeEllapsed < 1)
     {
       if (!isVisible)
       {
-        comboText.text = "COMBO";
+        newCombo.text = "COMBO";
         isVisible = true;
       }
       else
       {
-        comboText.text = "";
+        newCombo.text = "";
         isVisible = false;
       }
       yield return new WaitForSeconds(blinkDelay);
       timeEllapsed += blinkDelay;
     }
-    comboText.text = "";
+    Destroy(newCombo.gameObject);
   }
 
-  void StartPlusPointsAnimation(float addedPoints, float points)
+  void UpdatePointsHandler(float addedPoints, float points)
   {
     pointsText.text = "Points: " + points;
     StartCoroutine(PlusPointsAnimation(addedPoints));
@@ -107,7 +113,7 @@ public class UIManager : MonoBehaviour
     Destroy(newText.gameObject);
   }
 
-  void StartGameOverSequence(float scoreFinal)
+  void GameOverHandler(float scoreFinal)
   {
 		isTimeFlowing = false;
 		StartCoroutine(GameOver(scoreFinal));
@@ -131,9 +137,10 @@ public class UIManager : MonoBehaviour
     yield return new WaitForSeconds(5);
 
     gameOverText.rectTransform.localScale = Vector3.zero;
-    timeText.rectTransform.localPosition = new Vector3(475, -200, 0);
-    pointsText.rectTransform.localPosition = new Vector3(475, -250, 0);
+    timeText.rectTransform.localPosition = new Vector3(-475, -200, 0);
+    pointsText.rectTransform.localPosition = new Vector3(-475, -250, 0);
 		pointsText.text = "Points: 0";
+    timeText.text = "Temps: 0";
 
     gameTime = 0;
 		isTimeFlowing = true;

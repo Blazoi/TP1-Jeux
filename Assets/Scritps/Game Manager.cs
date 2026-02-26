@@ -1,9 +1,6 @@
 using System;
 using System.Collections;
-using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
 {
@@ -15,34 +12,24 @@ public class GameManager : MonoBehaviour
   public static event Action<int> ComboUI;
   public static event Action<float> GameOverUI;
 
-  int baitNumber = 0;
   Coroutine gameTimeCoroutine;
   bool canSpawnNextPair = true;
   bool isGameOver = false;
 
+  int baitNumber = 0;
   float waitTime = 5;
   float points = 0;
 
 
   void Start()
   {
-    // todo delete those when done testing
-    // todo dont forget to start the game with 3 pairs
-    GameObject ne = Instantiate(ennemyPrefab);
-    ne.transform.position = new Vector3(0, 0, 3);
-    ne.GetComponent<EnnemyScript>().EnnemyDoneDrifting += AfterEnnemyDoneDrifting;
-
-    for (int i = 0; i < 2; i++)
-    {
-      GameObject nb = Instantiate(baitPrefab);
-      nb.transform.position = new Vector3(0, 0, 5 + i * 2);
-    }
-
-    // todo add the comboui animations to the cheats
     CheatCodes cheats = transform.GetComponent<CheatCodes>();
     cheats.addPoints += AddPoints;
-    cheats.deleteAllPairs += DestroyAll;
+    cheats.deleteAllPairs += ResetGame;
     cheats.playComboAnimation += CallComboUI;
+    cheats.testSetup += testSetupHandler;
+
+    for (int i = 0; i < 3; i++) SpawnPair(true);
   }
 
   void Update()
@@ -66,7 +53,7 @@ public class GameManager : MonoBehaviour
   }
 
   // * Ennemis et appâts
-  IEnumerator SpawnPair()
+  IEnumerator SpawnPair(bool setUp = false)
   {
     /*
 		 Déterminer position aléatoire
@@ -77,29 +64,30 @@ public class GameManager : MonoBehaviour
 		 */
 
     // Position
-    float xBaitPosition = UnityEngine.Random.Range(-10f, 10f);
-    float yBaitPosition = UnityEngine.Random.Range(-1.5f, 8f);
-    float zBaitPosition = UnityEngine.Random.Range(-10f, 10f);
+    Vector3 newBaitPosition = new Vector3(
+      UnityEngine.Random.Range(-10, 10),
+      UnityEngine.Random.Range(-5, 5),
+      UnityEngine.Random.Range(-10, 10));
 
     float offset = UnityEngine.Random.Range(-2, 2);
-    Vector3 positionOffset = new Vector3(offset, 0, offset);
+
+    // https://gemini.google.com/share/896868075062
+    Vector3 positionOffset = new Vector3(offset + 2 * Mathf.Sign(offset), 0, offset + 2 * Mathf.Sign(offset));
 
     // Nouvel appât
-    GameObject newBait = Instantiate(baitPrefab);
-    newBait.transform.position = new Vector3(xBaitPosition, yBaitPosition, zBaitPosition);
+    GameObject newBait = Instantiate(baitPrefab, newBaitPosition, Quaternion.identity);
 
     // Nouveau Poisson
-    GameObject newEnnemy = Instantiate(ennemyPrefab);
-    newEnnemy.GetComponent<EnnemyScript>().EnnemyDoneDrifting += AfterEnnemyDoneDrifting;
-    newEnnemy.transform.position = newBait.transform.position + positionOffset;
+    GameObject newEnnemy = Instantiate(ennemyPrefab, newBaitPosition + positionOffset, Quaternion.identity);
+    newEnnemy.GetComponent<EnnemyScript>().EnnemyDoneDrifting += EnnemyDoneDriftingHandler;
 
     baitNumber++;
 
-    yield return new WaitForSeconds(5f);
+    yield return new WaitForSeconds(setUp ? 0 : 1f);
     canSpawnNextPair = true;
   }
 
-  void AfterEnnemyDoneDrifting(int baitCollided)
+  void EnnemyDoneDriftingHandler(int baitCollided)
   {
     /*
 		 Quand l'ennemi fini de bouger
@@ -112,9 +100,12 @@ public class GameManager : MonoBehaviour
     if (baitCollided > 1)
     {
       int comboSelector = UnityEngine.Random.Range(0, 1);
-      if (comboSelector == 0) CallComboUI(comboSelector);
-      else CallComboUI(comboSelector);
+      CallComboUI(comboSelector);
     }
+  }
+  void CallComboUI(int comboSelector)
+  {
+    ComboUI(comboSelector);
   }
 
   void AddPoints(float baitCollided)
@@ -123,6 +114,7 @@ public class GameManager : MonoBehaviour
     points += pointsToAdd;
     UpdatePoints(pointsToAdd, points);
   }
+
 
   // * Gameplay
   IEnumerator GameOver()
@@ -134,6 +126,7 @@ public class GameManager : MonoBehaviour
 		 Attendre 5 secondes
 		 Détruire les paires existantes
 
+     Faire apparaître 3 paires initiales
 		 Réinitialiser et repartir le jeu normalement
 		 */
 
@@ -141,19 +134,12 @@ public class GameManager : MonoBehaviour
     canSpawnNextPair = false;
     player.GetComponent<Rigidbody>().isKinematic = true;
 
-    yield return new WaitForSeconds(4);
-    DestroyAll();
-    yield return new WaitForSeconds(1);
-
-    player.GetComponent<Rigidbody>().isKinematic = false;
-    player.transform.position = Vector3.zero;
-    canSpawnNextPair = true;
-    isGameOver = false;
-    points = 0;
-    baitNumber = 0;
+    yield return new WaitForSeconds(5);
+    ResetGame();
+    for (int i = 0; i < 3; i++) SpawnPair(true);
   }
 
-  void DestroyAll()
+  void ResetGame()
   {
     // Trouver tous les ennemis et appâts et les détruire
     GameObject[] ennemies = GameObject.FindGameObjectsWithTag("Ennemy");
@@ -161,27 +147,52 @@ public class GameManager : MonoBehaviour
 
     foreach (GameObject ennemy in ennemies)
     {
-      StartCoroutine(ScaleDown(ennemy));
+      Destroy(ennemy);
     }
     foreach (GameObject bait in baits)
     {
-      StartCoroutine(ScaleDown(bait));
+      Destroy(bait);
     }
+
+    player.transform.position = Vector3.zero;
+    player.GetComponent<Rigidbody>().isKinematic = false;
+    canSpawnNextPair = true;
+    isGameOver = false;
+    points = 0;
+    baitNumber = 0;
   }
 
-  IEnumerator ScaleDown(GameObject target)
+  void testSetupHandler(int fishAmount)
   {
-    while (target.transform.localScale.magnitude > 0)
+    player.transform.position = Vector3.zero;
+    player.transform.rotation = Quaternion.identity;
+
+    GameObject[] baits = GameObject.FindGameObjectsWithTag("Bait");
+    GameObject[] ennemies = GameObject.FindGameObjectsWithTag("Ennemy");
+
+    foreach (GameObject ennemy in ennemies)
     {
-      target.transform.localScale -= new Vector3(1, 1, 1) * Time.deltaTime;
-      Debug.Log(target.transform.localScale);
-      yield return null;
+      if (ennemy.name == "TestEnnemy")
+      {
+        Destroy(ennemy);
+        break;
+      }
     }
-    Destroy(target);
-  }
 
-  void CallComboUI(int comboSelector)
-  {
-    ComboUI(comboSelector);
+    foreach (GameObject bait in baits)
+    {
+      if (bait.name == "TestBait")
+      {
+        Destroy(bait);
+      }
+    }
+
+    GameObject newFish = Instantiate(ennemyPrefab, new Vector3(0, 0, 2), Quaternion.identity);
+    newFish.name = "TestEnnemy";
+    for (int i = 1; i <= fishAmount; i++)
+    {
+      GameObject newBait = Instantiate(baitPrefab, new Vector3(0, 0, 2 + i * 2), Quaternion.identity);
+      newBait.name = "TestBait";
+    }
   }
 }
