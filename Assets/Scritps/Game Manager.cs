@@ -4,18 +4,21 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+// --- Références & Prefabs ---
   [SerializeField] GameObject player;
   [SerializeField] GameObject ennemyPrefab;
   [SerializeField] GameObject baitPrefab;
 
-  public static event Action<float, float> UpdatePoints;
-  public static event Action<int> ComboUI;
-  public static event Action<float> GameOverUI;
+  // --- Événements ---
+  public event Action<float, float> UpdatePoints;
+  public event Action<int> ComboUI;
+  public event Action<float> GameOverUI;
 
-  Coroutine gameTimeCoroutine;
+  // --- États du Jeu ---
   bool canSpawnNextPair = true;
   bool isGameOver = false;
 
+  // --- Données & Statistiques ---
   int baitNumber = 0;
   float waitTime = 5;
   float points = 0;
@@ -23,13 +26,12 @@ public class GameManager : MonoBehaviour
 
   void Start()
   {
-    CheatCodes cheats = transform.GetComponent<CheatCodes>();
-    cheats.addPoints += AddPoints;
-    cheats.deleteAllPairs += ResetGame;
-    cheats.playComboAnimation += CallComboUI;
-    cheats.testSetup += testSetupHandler;
+    GetComponent<CheatCodes>().addPoints += AddPoints;
+    GetComponent<CheatCodes>().deleteAllPairs += ResetGame;
+    GetComponent<CheatCodes>().playComboAnimation += CallComboUI;
+    GetComponent<CheatCodes>().testSetup += testSetupHandler;
 
-    for (int i = 0; i < 3; i++) SpawnPair(true);
+    for (int i = 0; i < 2; i++) StartCoroutine(SpawnPair(true));
   }
 
   void Update()
@@ -38,7 +40,7 @@ public class GameManager : MonoBehaviour
 		 Faire apparaître une paire après cooldown et si nombre < 20
 		 Sinon commencer la séquence de fin de jeu
 		*/
-    if (canSpawnNextPair && baitNumber < 20)
+    if (canSpawnNextPair && baitNumber < 21)
     {
       waitTime = Mathf.Max(2, 5 - Mathf.Pow(points, .25f));
 
@@ -56,9 +58,8 @@ public class GameManager : MonoBehaviour
   IEnumerator SpawnPair(bool setUp = false)
   {
     /*
-		 Déterminer position aléatoire
+		 Déterminer une position aléatoire
 		 Même position pour le poisson avec un offset
-		 Offset en y est 0, plus facile à jouer
 
 		 Empêcher l'apparition d'un autre appât jusqu'après la fin du cooldown
 		 */
@@ -72,36 +73,32 @@ public class GameManager : MonoBehaviour
     float offset = UnityEngine.Random.Range(-2, 2);
 
     // https://gemini.google.com/share/896868075062
+    // Ajouter 2 dans la même direction pour empêcher qu'ils spawn l'un sur l'autre
     Vector3 positionOffset = new Vector3(offset + 2 * Mathf.Sign(offset), 0, offset + 2 * Mathf.Sign(offset));
 
-    // Nouvel appât
+    // Nouveaux GameObjects
     GameObject newBait = Instantiate(baitPrefab, newBaitPosition, Quaternion.identity);
-
-    // Nouveau Poisson
     GameObject newEnnemy = Instantiate(ennemyPrefab, newBaitPosition + positionOffset, Quaternion.identity);
     newEnnemy.GetComponent<EnnemyScript>().EnnemyDoneDrifting += EnnemyDoneDriftingHandler;
 
     baitNumber++;
 
-    yield return new WaitForSeconds(setUp ? 0 : 1f);
-    canSpawnNextPair = true;
+    if (!setUp)
+    {
+      yield return new WaitForSeconds(waitTime);
+      canSpawnNextPair = true;
+    }
   }
 
-  void EnnemyDoneDriftingHandler(int baitCollided)
+  void EnnemyDoneDriftingHandler(int baitCollided, GameObject ennemyFish)
   {
     /*
-		 Quand l'ennemi fini de bouger
-		 Ajouter les points (baitCollided^2)
-		 Afficher COMBO au hasard (0 ou 1) si baitCollided > 1
+		 Ajouter les points
+     Détruire l'ennemi
 		*/
 
     AddPoints(baitCollided);
-
-    if (baitCollided > 1)
-    {
-      int comboSelector = UnityEngine.Random.Range(0, 1);
-      CallComboUI(comboSelector);
-    }
+    Destroy(ennemyFish);
   }
   void CallComboUI(int comboSelector)
   {
@@ -110,8 +107,23 @@ public class GameManager : MonoBehaviour
 
   void AddPoints(float baitCollided)
   {
+    /*
+     Ajouter points au total (baitCollided ^ 2)
+     Au besoin, afficher Combo
+     0 => Shake
+     1 => Blink
+
+     Update l'UI
+    */
+
     float pointsToAdd = Mathf.Pow(baitCollided, 2);
     points += pointsToAdd;
+
+    if (baitCollided > 1)
+    {
+      int comboSelector = UnityEngine.Random.Range(0, 2);
+      CallComboUI(comboSelector);
+    }
     UpdatePoints(pointsToAdd, points);
   }
 
@@ -164,31 +176,29 @@ public class GameManager : MonoBehaviour
 
   void testSetupHandler(int fishAmount)
   {
+    /*
+     Mettre le joueur au milieu
+     Supprimer les objets de tests s'ils existent déjà
+
+     Créer nouveau poisson devant le joueur
+     Créer x nouveau appâts à 2 unités de chacun et le premier 2 unités du poisson
+    */
     player.transform.position = Vector3.zero;
     player.transform.rotation = Quaternion.identity;
 
+    // https://docs.unity3d.com/6000.3/Documentation/ScriptReference/GameObject.Find.html
+    Destroy(GameObject.Find("TestEnnemy"));
+
     GameObject[] baits = GameObject.FindGameObjectsWithTag("Bait");
-    GameObject[] ennemies = GameObject.FindGameObjectsWithTag("Ennemy");
-
-    foreach (GameObject ennemy in ennemies)
-    {
-      if (ennemy.name == "TestEnnemy")
-      {
-        Destroy(ennemy);
-        break;
-      }
-    }
-
     foreach (GameObject bait in baits)
     {
-      if (bait.name == "TestBait")
-      {
-        Destroy(bait);
-      }
+      if (bait.name == "TestBait") Destroy(bait);
     }
 
     GameObject newFish = Instantiate(ennemyPrefab, new Vector3(0, 0, 2), Quaternion.identity);
     newFish.name = "TestEnnemy";
+    newFish.GetComponent<EnnemyScript>().EnnemyDoneDrifting += EnnemyDoneDriftingHandler;
+
     for (int i = 1; i <= fishAmount; i++)
     {
       GameObject newBait = Instantiate(baitPrefab, new Vector3(0, 0, 2 + i * 2), Quaternion.identity);

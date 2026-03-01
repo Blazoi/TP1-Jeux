@@ -31,7 +31,7 @@
 - [x] **Spawn initial :** 3 appâts au hasard + 3 ennemis à 10 unités de leur appât (même Y).
 - [x] **Animation Spawn :** Grossit graduellement de (0,0,0) à sa taille normale.
 - [x] **Physique Ennemi :** `IsKinematic = true` par défaut. Devient `false` si touché.
-- [ ] **Rotation :** Animation aléatoire sur Y toutes les 0.5 à 2 secondes (quand Kinematic).
+- [x] **Rotation :** Animation aléatoire sur Y toutes les 0.5 à 2 secondes (quand Kinematic).
 
 ## 🎮 Logique de Gameplay
 - [x] **Dérive :** L'ennemi dérive pendant **2.5s** après l'impact.
@@ -48,13 +48,13 @@
 
 ## 🖥️ Interface Utilisateur (UI)
 - [x] **HUD :** Score et Temps total affichés en haut à gauche.
-- [ ] **Feedback Score :** Texte vert avec Fade-in et Fade-out (Alpha TMP_Text).
-- [ ] **Animations Combo :** Si N > 1 (Jaune, durée 1s) :
+- [x] **Feedback Score :** Texte vert avec Fade-in et Fade-out (Alpha TMP_Text).
+- [x] **Animations Combo :** Si N > 1 (Jaune, durée 1s) :
     - [x] Choix aléatoire entre Clignotement ou "Shake" (pixel offset aléatoire).
-    - [ ] Protection anti-doublon (ne pas relancer si déjà en cours).
+    - [x] Protection anti-doublon (ne pas relancer si déjà en cours).
 - [ ] **Fin de partie :** Déclenchée à 20 poissons.
-    - [ ] Affichage "PARTIE FINIE" + Score final.
-    - [ ] Relance du jeu après 5 secondes.
+    - [x] Affichage "PARTIE FINIE" + Score final.
+    - [x] Relance du jeu après 5 secondes.
 
 ## ⌨️ Codes de Triche (Debug)
 - [x] `u` : +1 point.
@@ -66,6 +66,6 @@
 - [x] `2` : Setup combo (Poisson à 0,0,0 + 2 appâts + 1 ennemi devant).
 
 ## 📐 Architecture & Qualité
-- [ ] **Patron Observateur :** Utilisé pour lier la fin de la dérive au Gestionnaire de Jeu.
+- [x] **Patron Observateur :** Utilisé pour lier la fin de la dérive au Gestionnaire de Jeu.
 - [ ] **Code :** Clair, commenté, pas de duplication, pas de franglais.
 - [ ] **Organisation :** Prefabs utilisés, dossiers Textures/Scripts/Prefabs propres.

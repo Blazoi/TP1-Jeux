@@ -1,10 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
-using Unity.VisualScripting;
 
 public class UIManager : MonoBehaviour
 {
+  // --- Éléments d'Interface ---
   [SerializeField] Canvas canvas;
   [SerializeField] TMP_Text gameOverText;
   [SerializeField] TMP_Text timeText;
@@ -12,93 +12,117 @@ public class UIManager : MonoBehaviour
   [SerializeField] TMP_Text plusPointsAnimatedText;
   [SerializeField] TMP_Text comboText;
 
+  // --- Gestion des Coroutines ---
+  Coroutine gameTimeCoroutine;
+
+  // --- État du Jeu ---
   float gameTime = 0;
   bool isTimeFlowing = true;
+  bool isComboPlaying = false;
 
   void Start()
   {
-    StartCoroutine(GameTimeCounter());
-    GameManager.UpdatePoints += UpdatePointsHandler;
-    GameManager.ComboUI += ComboUIHandler;
-		GameManager.GameOverUI += GameOverHandler;
+    // Lancer le compteur et abonnement aux events du GameManager
+    gameTimeCoroutine = StartCoroutine(GameTimeCounter());
+    GetComponent<GameManager>().UpdatePoints += UpdatePointsHandler;
+    GetComponent<GameManager>().ComboUI += ComboUIHandler;
+    GetComponent<GameManager>().GameOverUI += GameOverHandler;
 
+    // Initialisation de l'UI
     timeText.rectTransform.localPosition = new Vector3(-475, -200, 0);
+    timeText.text = "Temps: 0s";
     pointsText.rectTransform.localPosition = new Vector3(-475, -250, 0);
   }
 
   IEnumerator GameTimeCounter()
   {
-    // Ajouter .01s au temps, l'arrondir et update l'UI
+    // Update l'UI chaque .1s
+    // On arrondit sinon erreurs comme: 0.4000000000001
     while (isTimeFlowing)
     {
       yield return new WaitForSeconds(.1f);
       gameTime += .1f;
       gameTime = Mathf.Round(gameTime * 100) / 100;
 
-      timeText.text = "Temps: " + gameTime;
+      timeText.text = "Temps: " + gameTime + "s";
     }
   }
 
   void ComboUIHandler(int comboSelector)
   {
-    StartCoroutine(comboSelector == 0 ? ShakeComboUI() : BlinkComboUI());
+    /*
+     0 => Shake COMBO
+     1 => Blink COMBO
+    */
+    if (!isComboPlaying)
+    {
+      isComboPlaying = true;
+      StartCoroutine(comboSelector == 0 ? ShakeComboUI() : BlinkComboUI());
+    }
   }
 
   IEnumerator ShakeComboUI()
   {
+    /*
+     Tracker le temps écoulé et temps entre chaque secouement
+     Changer la position après chauqe délai
+    */
     float timeEllapsed = 0;
     float shakeDelay = .05f;
 
-    TMP_Text newCombo = Instantiate(comboText, canvas.transform);
-    newCombo.rectTransform.anchoredPosition = new Vector2(0, 3);
-    newCombo.text = "COMBO";
+    comboText.text = "COMBO";
 
     while (timeEllapsed < 1)
     {
       float xPosition = Random.Range(-15, 15);
       float yPosition = Random.Range(-15, 15);
 
-      newCombo.rectTransform.anchoredPosition = new Vector2(xPosition, yPosition);
+      comboText.rectTransform.anchoredPosition = new Vector2(xPosition, yPosition);
       yield return new WaitForSeconds(shakeDelay);
       timeEllapsed += shakeDelay;
     }
 
-    Destroy(newCombo.gameObject);
+    comboText.text = "";
+    isComboPlaying = false;
   }
   IEnumerator BlinkComboUI()
   {
-    TMP_Text newCombo = Instantiate(comboText, canvas.transform);
-    newCombo.rectTransform.anchoredPosition = new Vector2(10, 0);
-
+    /*
+     Tracker le temps écoulé
+     Attendre le délai
+     Afficher "COMBO" chaque fois que isVisible = true
+    */
     float timeEllapsed = 0;
     float blinkDelay = .05f;
     bool isVisible = true;
 
     while (timeEllapsed < 1)
     {
-      if (!isVisible)
-      {
-        newCombo.text = "COMBO";
-        isVisible = true;
-      }
-      else
-      {
-        newCombo.text = "";
-        isVisible = false;
-      }
+      comboText.text = isVisible ? "" : "COMBO";
+      isVisible = comboText.text == "" ? false : true;
       yield return new WaitForSeconds(blinkDelay);
       timeEllapsed += blinkDelay;
     }
-    Destroy(newCombo.gameObject);
+
+    comboText.text = "";
+    isComboPlaying = false;
   }
 
-  void UpdatePointsHandler(float addedPoints, float points)
+  void UpdatePointsHandler(float addedPoints, float totalPoints)
   {
-    pointsText.text = "Points: " + points;
+    pointsText.text = "Points: " + totalPoints;
     StartCoroutine(PlusPointsAnimation(addedPoints));
   }
   IEnumerator PlusPointsAnimation(float points)
   {
+    /*
+     Créer un nouveau texte
+      le positionner
+      le parenter
+      définir le texte " + x points"
+     
+     L'animer (vers le haut) puis détruire
+    */
     TMP_Text newText = Instantiate(plusPointsAnimatedText);
     newText.rectTransform.SetParent(canvas.transform);
     newText.rectTransform.anchoredPosition = new Vector3(250, -250, 0);
@@ -115,8 +139,9 @@ public class UIManager : MonoBehaviour
 
   void GameOverHandler(float scoreFinal)
   {
-		isTimeFlowing = false;
-		StartCoroutine(GameOver(scoreFinal));
+    // Arrêter le temps et commencer séquence côté UI
+    isTimeFlowing = false;
+    StartCoroutine(GameOver(scoreFinal));
   }
   IEnumerator GameOver(float scoreFinal)
   {
@@ -129,20 +154,30 @@ public class UIManager : MonoBehaviour
 		 Afficher l'UI régulier
 		 */
 
-    gameOverText.rectTransform.localScale = new Vector3(1, 1, 1);
-    timeText.rectTransform.localPosition = Vector3.zero;
-    pointsText.rectTransform.localPosition = new Vector3(0, -50, 0);
-		pointsText.text = "Score final: " + scoreFinal;
+    StopCoroutine(gameTimeCoroutine);
+    StoppedGameUI(scoreFinal);
 
     yield return new WaitForSeconds(5);
 
-    gameOverText.rectTransform.localScale = Vector3.zero;
+    ResetUI();
+    isTimeFlowing = true;
+    gameTime = 0;
+    gameTimeCoroutine = StartCoroutine(GameTimeCounter());
+  }
+
+  void StoppedGameUI(float scoreFinal)
+  {
+    gameOverText.text = "Partie Finie";
+    timeText.rectTransform.localPosition = Vector3.zero;
+    pointsText.rectTransform.localPosition = new Vector3(0, -50, 0);
+    pointsText.text = "Score final: " + scoreFinal;
+  }
+  void ResetUI()
+  {
+    gameOverText.text = "";
     timeText.rectTransform.localPosition = new Vector3(-475, -200, 0);
     pointsText.rectTransform.localPosition = new Vector3(-475, -250, 0);
-		pointsText.text = "Points: 0";
-    timeText.text = "Temps: 0";
-
-    gameTime = 0;
-		isTimeFlowing = true;
+    pointsText.text = "Points: 0";
+    timeText.text = "Temps: 0s";
   }
 }

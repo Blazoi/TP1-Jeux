@@ -11,7 +11,7 @@ public class CheatCodes : MonoBehaviour
 
 	void Update()
 	{
-		// +1 ou +4 points avec animation
+		// +1 ou +4 points avec animation aléatoire
 		if (Keyboard.current.uKey.wasPressedThisFrame)
 		{
 			addPoints(1);
@@ -19,17 +19,21 @@ public class CheatCodes : MonoBehaviour
 		if (Keyboard.current.iKey.wasPressedThisFrame)
 		{
 			addPoints(2);
-			playComboAnimation(0);
+			playComboAnimation(UnityEngine.Random.Range(0, 2));
 		}
 
 		// Animations Combo
-		if (Keyboard.current.oKey.wasPressedThisFrame)
-		{
-			playComboAnimation(1);
-		}
+		/*
+		 L => Shake
+		 o => Blink
+		*/
 		if (Keyboard.current.lKey.wasPressedThisFrame)
 		{
 			playComboAnimation(0);
+		}
+		if (Keyboard.current.oKey.wasPressedThisFrame)
+		{
+			playComboAnimation(1);
 		}
 
 		// Suppressions touts appâts et poissons

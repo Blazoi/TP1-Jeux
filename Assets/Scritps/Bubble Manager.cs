@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class BubbleManager : MonoBehaviour
 {
+	// --- Prefabs & Spawning ---
 	[SerializeField] GameObject bubblePrefab;
+
+	// --- État du Jeu (Flags) ---
 	bool canSpawnNextGroup = true;
 
 	void Update()
@@ -30,12 +33,9 @@ public class BubbleManager : MonoBehaviour
 		for (int i = 0; i < 40; i++)
 		{
 			// Position
-			// float xBubblePosition = Random.Range(-7.5f, 7.5f);
-			// float yBubblePosition = Random.Range(-1f, 1f);
-			// float zBubblePosition = Random.Range(-7.5f, 7.5f);
-			float xBubblePosition = Random.Range(-15f, 15f);
+			float xBubblePosition = Random.Range(-7.5f, 7.5f);
 			float yBubblePosition = Random.Range(-2f, 2f);
-			float zBubblePosition = Random.Range(-15f, 15f);
+			float zBubblePosition = Random.Range(-7.5f, 7.5f);
 
 			GameObject newBubble = Instantiate(bubblePrefab);
 			newBubble.transform.parent = emptyParent.transform;
